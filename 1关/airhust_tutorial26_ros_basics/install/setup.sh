@@ -11,7 +11,7 @@
 
 # since this file is sourced either use the provided _CATKIN_SETUP_DIR
 # or fall back to the destination set at configure time
-: ${_CATKIN_SETUP_DIR:=/home/consefact/tutor_26/dist/drone_ws/install}
+: ${_CATKIN_SETUP_DIR:=/home/airhust/March_airhust/1关/airhust_tutorial26_ros_basics/install}
 _SETUP_UTIL="$_CATKIN_SETUP_DIR/_setup_util.py"
 unset _CATKIN_SETUP_DIR
 

@@ -74,7 +74,7 @@ if("FALSE" STREQUAL "TRUE")
 else()
   set(drone_backend_SOURCE_PREFIX "")
   set(drone_backend_DEVEL_PREFIX "")
-  set(drone_backend_INSTALL_PREFIX /home/consefact/tutor_26/dist/drone_ws/install)
+  set(drone_backend_INSTALL_PREFIX /home/airhust/March_airhust/1关/airhust_tutorial26_ros_basics/install)
   set(drone_backend_PREFIX ${drone_backend_INSTALL_PREFIX})
 endif()
 
@@ -156,7 +156,7 @@ foreach(library ${libraries})
     set(lib_path "")
     set(lib "${library}-NOTFOUND")
     # since the path where the library is found is returned we have to iterate over the paths manually
-    foreach(path /home/consefact/tutor_26/dist/drone_ws/install/lib;/opt/ros/noetic/lib)
+    foreach(path /home/airhust/March_airhust/1关/airhust_tutorial26_ros_basics/install/lib;/opt/ros/noetic/lib)
       find_library(lib ${library}
         PATHS ${path}
         NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)

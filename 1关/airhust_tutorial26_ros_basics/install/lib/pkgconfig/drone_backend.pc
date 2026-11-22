@@ -1,4 +1,4 @@
-prefix=/home/consefact/tutor_26/dist/drone_ws/install
+prefix=/home/airhust/March_airhust/1关/airhust_tutorial26_ros_basics/install
 
 Name: drone_backend
 Description: Description of drone_backend
