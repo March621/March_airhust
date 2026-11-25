@@ -29,7 +29,8 @@ float init_position_y_take_off = 0;
 float init_position_z_take_off = 0;
 float init_yaw_take_off = 0;
 bool flag_init_position = false;
-
+float circle_radius = 1.0f;  
+float circle_period = 20.0f;
 
 
 void local_pos_cb(const nav_msgs::Odometry::ConstPtr &msg)
@@ -76,6 +77,33 @@ bool mission_pos_cruise(float x, float y, float z, float target_yaw, float error
 		return true;
 	}
 	return false;
+}
+
+//转圈函数,输入半径
+ros::Time circle_t0;
+bool circle_started = false;
+
+bool circle_by_time(float r, float period, float error_max)
+{
+    if (!circle_started) {
+        circle_t0 = ros::Time::now();
+        circle_started = true;
+    }
+    double t = (ros::Time::now() - circle_t0).toSec();   // 已经过去多少秒
+
+    //算 θ —— 用公式 θ = 2π × t / period（逆时针）
+	double theta = (2*3.14 / period) * t;
+    //算目标点 x = r × cos(θ)，y = r × sin(θ)
+	x = r * std::cos(theta);
+	y = r * std::sin(theta);
+    mission_pos_cruise(x, y, ALTITUDE, 0, error_max);                                                   ↑ yaw 固定 0，别动
+	if(t >= period)
+	{
+		circle_started = 0;
+		return true;
+	}
+    //t 超过 period 就说明绕完一圈 → 复位 circle_started，return true
+    return false;
 }
 
 // 以首次调用时的当前位置为 XY 平移起点；不进行机体航向旋转。

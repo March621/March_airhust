@@ -19,6 +19,8 @@ void print_param()
   std::cout << "if_debug: " << if_debug << std::endl;
   if(if_debug == 1) cout << "自动offboard" << std::endl;
   else cout << "遥控器offboard" << std::endl;
+  std::cout << "circle_radius: " << circle_radius << std::endl;
+  std::cout << "circle_period: " << circle_period << std::endl;
 }
 
 
@@ -49,6 +51,8 @@ int main(int argc, char **argv)
 
   nh.param<float>("err_max", err_max, 0);
   nh.param<float>("if_debug", if_debug, 0);
+  nh.param<float>("circle_radius", circle_radius, 1.0f);
+  nh.param<float>("circle_period", circle_period, 20.0f);
   print_param();
 
   
@@ -148,7 +152,7 @@ int main(int argc, char **argv)
 
       //世界系前进
       case 2:
-        if (mission_pos_cruise(4.0, 0.0, ALTITUDE, 1.57, err_max))
+        if (mission_pos_cruise(circle_radius, 0.0, ALTITUDE, 0, err_max))
         {
           mission_num = 3;
           last_request = ros::Time::now();
@@ -157,7 +161,7 @@ int main(int argc, char **argv)
     
       //机体系右移
       case 3:
-        if(current_position_cruise(0.0, -4.0, ALTITUDE, -1.57, err_max))
+        if(circle_by_time(circle_radius, circle_period, error_max))
         {
           mission_num = 4;
           last_request = ros::Time::now();
