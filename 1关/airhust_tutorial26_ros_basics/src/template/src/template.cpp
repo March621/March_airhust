@@ -161,7 +161,7 @@ int main(int argc, char **argv)
     
       //机体系右移
       case 3:
-        if(circle_by_time(circle_radius, circle_period, error_max))
+        if(circle_by_time(circle_radius, circle_period, err_max))
         {
           mission_num = 4;
           last_request = ros::Time::now();
