@@ -45,7 +45,8 @@ float vel_sp_max;                                               //总速度限�
 
 void rotation_yaw(float yaw_angle, float input[2], float output[2])
 {
-    
+    output[0] = input[0] * cos(yaw_angle) - input[1] * sin(yaw_angle);
+    output[1] = input[0] * sin(yaw_angle) + input[1] * cos(yaw_angle);
 }
 
 //在 360 个 bin 里找最近的障碍物：distance_c 为水平距离[m]，angle_c 为机体系角度[度]，0 度 = 机头方向
@@ -108,10 +109,16 @@ void collision_avoidance(float target_x,float target_y)
         float F_c = 0;
 
         //小幅度抑制移动速度
-        
+        if(distance_c <= R_outside  && distance_c > R_inside)
+        {
+            F_c = p_R *(R_outside - distance_c);
+        }
 
         //大幅度抑制移动速度
-        
+        else if(distance_c <= R_inside)
+        {
+            F_c = p_R * (R_outside - R_inside) + p_r * (R_inside - distance_c);
+        }
 
         //距离为 0 时"障碍物在哪个方向"没有意义，跳过除法，避免 0/0 = nan
         if (distance_c > 0.01f)
@@ -120,20 +127,29 @@ void collision_avoidance(float target_x,float target_y)
             vel_collision[1] = vel_collision[1] - F_c * distance_cy / distance_c;
         }
         //避障速度限幅到设定最大值（需要等比例修改）
-        
+        double V = sqrt(vel_collision[0] * vel_collision[0] + vel_collision[1] * vel_collision[1]);
+        if(V > vel_collision_max)
+        {
+            vel_collision[0] = vel_collision_max * vel_collision[0] / V;
+            vel_collision[1] = vel_collision_max * vel_collision[1] / V; 
+        }
 
     }
 
     //坐标系转换
-    
+    rotation_yaw(yaw, vel_collision, vel_collision_ENU);
 
     vel_sp_ENU[0] = vel_track[0] + vel_collision_ENU[0];
     vel_sp_ENU[1] = vel_track[1] + vel_collision_ENU[1];
 
 
     //速度限幅
-    
-
+    double V_sp = sqrt(vel_sp_ENU[0] * vel_sp_ENU[0] + vel_sp_ENU[1] * vel_sp_ENU[1]);
+    if (V_sp > vel_sp_max)
+    {
+        vel_sp_ENU[0] = vel_sp_max * vel_sp_ENU[0] / V_sp;
+        vel_sp_ENU[1] = vel_sp_max * vel_sp_ENU[1] / V_sp;
+    }
 }
 
 //接收处理三维点云（世界系 ENU）：
