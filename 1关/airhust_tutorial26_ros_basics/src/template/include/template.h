@@ -94,9 +94,9 @@ bool circle_by_time(float r, float period, float error_max)
     //算 θ —— 用公式 θ = 2π × t / period（逆时针）
 	double theta = (2*3.14 / period) * t;
     //算目标点 x = r × cos(θ)，y = r × sin(θ)
-	x = r * std::cos(theta);
-	y = r * std::sin(theta);
-    mission_pos_cruise(x, y, ALTITUDE, 0, error_max);                                                   ↑ yaw 固定 0，别动
+	double x = r * std::cos(theta);
+	double y = r * std::sin(theta);
+    mission_pos_cruise(x, y, ALTITUDE, 0, error_max);     
 	if(t >= period)
 	{
 		circle_started = 0;
