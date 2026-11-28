@@ -55,6 +55,7 @@ void printf_param()
     cout << "vel_collision_max : "<< vel_collision_max << endl;
 
     cout << "vel_sp_max : "<< vel_sp_max << endl;
+    cout << "escape_time : "<< escape_time << endl;
     cout << "range_min : "<< range_min << endl;
     cout << "range_max : "<< range_max << endl;
 }                                                          //打印各项参数以供检查
@@ -102,6 +103,9 @@ int main(int argc, char **argv)
 
     nh.param<float>("vel_collision_max", vel_collision_max, 0.30);
     nh.param<float>("vel_sp_max", vel_sp_max, 0.3);
+
+    //局部最优逃逸：每次沿切向绕行的时长 [s]
+    nh.param<float>("escape_time", escape_time, 1.0);
 
     nh.param<int>("range_min", range_min, 0);
     nh.param<int>("range_max", range_max, 359);

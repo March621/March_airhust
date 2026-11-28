@@ -37,6 +37,9 @@ float p_xy;                                                     //追踪部分�
 float vel_track[2];                                             //追踪部分速度
 float vel_track_max;                                            //追踪部分速度限幅
 
+//--------------------------------------------局部最优逃逸相关------------------------------------------
+float escape_time = 1.0f;                                       //每次逃逸（沿切向绕行）持续时长 [s]
+
 //--------------------------------------------输出--------------------------------------------------
 std_msgs::Bool flag_collision_avoidance;                       //是否进入避障模式标志位
 float vel_sp_ENU[2];                                            //ENU下的总速度
@@ -69,6 +72,71 @@ void cal_min_distance()
     }
 }
 
+//------------------------------------------局部最优逃逸（切向场）------------------------------------------
+// 人工势场法的固有缺陷：引力与斥力共线反向、大小相等时，合力为 0，飞机停在原地。
+// 这里做一层兜底（不改力气模型）：
+//   ① 每轮算一次"指令速度"，它接近 0 且附近确实有障碍 → 开始计时；
+//   ② 计时超过 1 秒 → 判定陷入局部最优，进入逃逸；
+//   ③ 逃逸时不再往固定方向推，而是沿"斥力的垂直方向"（切向）走，
+//      相当于沿着障碍边缘滑过去，比硬推一个固定方向更通用。
+// 数值来历：0.03 是"几乎没有输出"的量级；0.05 是"有障碍"的最小斥力；
+//          1 秒逃逸在 0.3 m/s 下约走 0.3 米。
+double stuck_time  = 0.0;      // 已经卡了多久 [s]
+double escape_left = 0.0;      // 还要沿切向走多久 [s]
+ros::Time last_check;          // 上一次检查的时刻，用来算时间差
+
+// vel_sp：待改写的输出速度（世界系）
+// rep   ：当前的避障速度 vel_collision_ENU（世界系），用它算切向
+// v_max ：总速度上限
+void check_and_escape(float vel_sp[2], float rep[2], float v_max)
+{
+    // 算出这一轮到下一轮过了多少秒（首帧先按 20Hz 的 0.05 秒估算）
+    double dt = 0.05;
+    if (!last_check.isZero())
+    {
+        dt = (ros::Time::now() - last_check).toSec();
+    }
+    last_check = ros::Time::now();
+    if (dt <= 0.0 || dt > 1.0) dt = 0.05;
+
+    float v_cmd = sqrt(vel_sp[0] * vel_sp[0] + vel_sp[1] * vel_sp[1]);
+    float rep_n = sqrt(rep[0] * rep[0] + rep[1] * rep[1]);
+
+    // ① 只有"没输出 + 附近有障碍"才算卡住；否则会误判（比如停在目标点附近）
+    if (v_cmd < 0.03f && rep_n > 0.05f) stuck_time += dt;
+    else                                stuck_time  = 0.0;
+
+    // ② 卡超过 1 秒 → 开始逃逸（逃逸时长由 escape_time 决定，可在 YAML 里调）
+    if (stuck_time > 1.0)
+    {
+        escape_left = escape_time;
+        stuck_time  = 0.0;
+        ROS_WARN("[escape] 检测到局部最优，沿障碍切向绕行 %.2f 秒", escape_time);
+    }
+
+    // ③ 逃逸期间：沿切向走（斥力方向转 90°），用满速
+    if (escape_left > 0.0)
+    {
+        float tangent[2];
+        rotation_yaw(1.5708f, rep, tangent);   // +90° = 逆时针
+
+        float mag = sqrt(tangent[0] * tangent[0]
+                       + tangent[1] * tangent[1]);
+        if (mag > 1e-3f)
+        {
+            // 归一化到满速：斥力大小会变，不归一化就推不动
+            vel_sp[0] = tangent[0] * v_max / mag;
+            vel_sp[1] = tangent[1] * v_max / mag;
+        }
+        else
+        {
+            // 兜底：万一这一帧没有斥力，往 +y 走
+            vel_sp[0] = 0.0f;
+            vel_sp[1] = v_max;
+        }
+        escape_left -= dt;
+    }
+}
 
 
 //避障函数
@@ -142,6 +210,8 @@ void collision_avoidance(float target_x,float target_y)
     vel_sp_ENU[0] = vel_track[0] + vel_collision_ENU[0];
     vel_sp_ENU[1] = vel_track[1] + vel_collision_ENU[1];
 
+    //局部最优兜底：卡住时沿障碍切向绕行（必须在总限幅之前，否则会被压回去）
+    check_and_escape(vel_sp_ENU, vel_collision_ENU, vel_sp_max);
 
     //速度限幅
     double V_sp = sqrt(vel_sp_ENU[0] * vel_sp_ENU[0] + vel_sp_ENU[1] * vel_sp_ENU[1]);

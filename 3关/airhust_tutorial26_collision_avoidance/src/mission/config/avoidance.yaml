@@ -30,3 +30,7 @@ max_obstacle_range: 8.0
 
 # 1: 自动切换 OFFBOARD；0: 等待遥控器切换，与 hover/square 配置一致
 if_debug: 1
+
+# 局部最优逃逸：每次沿障碍切向绕行的时长 [s]
+# 0.3 m/s 下 1.0 s 约走 0.3 m；调大绕得更远，调小更快结束
+escape_time: 1.0
